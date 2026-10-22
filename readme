@@ -1,0 +1,63 @@
+# 📚 PDF to Quiz Maker
+
+Upload your notes or a book chapter and get:
+
+- A clear **summary** and **key points**
+- **Flashcards** you can flip through one by one
+- An interactive **multiple-choice quiz** with a score, correct answers and explanations
+- Downloads as **Markdown** or **JSON**
+
+Built with **Streamlit** and **Google Gemini Flash**.
+
+## Features
+
+- Works with PDF, DOCX, TXT and MD files
+- Scanned (image-only) PDFs are read by Gemini directly
+- Choose the number of flashcards (5-20), quiz questions (5-20), difficulty, and an optional focus topic
+- Quiz answer positions are shuffled in code, so the correct answer is not always the same letter
+- Handles errors: wrong API key, rate limits, wrong model name (automatic fallback), invalid AI output (retries)
+
+## Run locally
+
+```bash
+git clone https://github.com/<your-username>/pdf-quiz-maker.git
+cd pdf-quiz-maker
+python -m venv venv
+source venv/bin/activate        # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+streamlit run app.py
+```
+
+Get a free Gemini API key at https://aistudio.google.com/apikey, then either:
+
+- paste it into the "Gemini API key" box on the main page, or
+- set it as an environment variable: `export GEMINI_API_KEY="your-key"`, or
+- create `.streamlit/secrets.toml` containing `GEMINI_API_KEY = "your-key"`
+
+## Deploy on Streamlit Community Cloud
+
+1. Push this repo to GitHub.
+2. Go to https://share.streamlit.io and sign in with GitHub.
+3. Click **Create app**, choose the repo, branch `main`, and main file `app.py`.
+4. Open **Advanced settings → Secrets** and add:
+   ```toml
+   GEMINI_API_KEY = "your-key"
+   ```
+5. Click **Deploy**.
+
+## Project structure
+
+```
+app.py            # Streamlit app
+requirements.txt  # Dependencies
+README.md
+.gitignore        # Keeps secrets out of Git
+```
+
+## Notes
+
+- Very long documents: only the first 120,000 characters of text are used.
+- Scanned PDFs larger than about 18 MB can't be read visually - split them first.
+- Document text is sent to Google's Gemini API. Don't upload anything you aren't comfortable sharing.
+- The default model is `gemini-flash-latest`; change it in the sidebar if you like. If a model name is wrong, the app falls back to a working one.
+- Output is AI-generated, so double-check important facts.
