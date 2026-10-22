@@ -61,3 +61,19 @@ README.md
 - Document text is sent to Google's Gemini API. Don't upload anything you aren't comfortable sharing.
 - The default model is `gemini-flash-latest`; change it in the sidebar if you like. If a model name is wrong, the app falls back to a working one.
 - Output is AI-generated, so double-check important facts.
+
+## Troubleshooting
+
+**`ModuleNotFoundError: No module named 'docx'` (or `pypdf`, `google`) on Streamlit Cloud**
+
+The packages were not installed. Check on GitHub that:
+
+1. A file named exactly `requirements.txt` (with an **s**) is in the **root** of the repo, next to `app.py`, not inside a folder.
+2. It contains these lines - note `python-docx`, not `docx`:
+   ```
+   streamlit>=1.40.0
+   google-genai>=1.0.0
+   pypdf>=5.0.0
+   python-docx>=1.1.0
+   ```
+3. Then open your app, click **Manage app → ⋮ → Reboot app**, and check the logs for pip errors.
