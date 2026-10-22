@@ -1,38 +1,78 @@
-"""PDF to Quiz Maker
+ """PDF to Quiz Maker
 Streamlit UI + Google Gemini Flash.
 
 Upload a PDF (notes, a book chapter...), and get a summary, key points,
 flashcards and an interactive multiple-choice quiz with answers.
 """
 
+import importlib
 import io
 import json
 import os
 import random
 import re
+import subprocess
+import sys
 import time
 
 import streamlit as st
 
-# Third-party packages are imported defensively: if one is missing (for example
-# because requirements.txt was not installed), the app shows a clear message
-# instead of crashing with a ModuleNotFoundError.
-try:
-    from docx import Document  # pip package name: python-docx
-except ImportError:
-    Document = None
-try:
-    from google import genai  # pip package name: google-genai
-    from google.genai import types
-except ImportError:
-    genai = None
-    types = None
-try:
-    from pypdf import PdfReader  # pip package name: pypdf
-except ImportError:
-    PdfReader = None
+# Third-party packages are loaded defensively. If one is missing (for example
+# because requirements.txt was not picked up by the host), the app tries to
+# install it once at startup, and otherwise shows a clear message instead of
+# crashing with a ModuleNotFoundError.
+Document = None  # pip package name: python-docx
+genai = None  # pip package name: google-genai
+types = None
+PdfReader = None  # pip package name: pypdf
+
+
+def load_packages() -> None:
+    global Document, genai, types, PdfReader
+    try:
+        from docx import Document as _Document
+
+        Document = _Document
+    except ImportError:
+        Document = None
+    try:
+        from google import genai as _genai
+        from google.genai import types as _types
+
+        genai, types = _genai, _types
+    except ImportError:
+        genai, types = None, None
+    try:
+        from pypdf import PdfReader as _PdfReader
+
+        PdfReader = _PdfReader
+    except ImportError:
+        PdfReader = None
+
+
+load_packages()
 
 REQUIREMENTS_TEXT = "streamlit\ngoogle-genai\npypdf\npython-docx"
+_INSTALL_ATTEMPTED = False
+
+
+def install_missing_packages() -> None:
+    """Best-effort one-time `pip install` of whatever is missing, then re-import."""
+    need = []
+    if genai is None:
+        need.append("google-genai>=1.0.0")
+    if PdfReader is None:
+        need.append("pypdf>=5.0.0")
+    if Document is None:
+        need.append("python-docx>=1.1.0")
+    if not need:
+        return
+    try:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "--quiet", *need], timeout=600)
+    except Exception:
+        return
+    importlib.invalidate_caches()
+    load_packages()
 
 # --------------------------------------------------------------------------
 # Config
@@ -464,7 +504,13 @@ def render_study(study: dict) -> None:
 # Main
 # --------------------------------------------------------------------------
 def ensure_dependencies() -> None:
-    """Stop with a clear fix if a required package is missing."""
+    """Install missing packages once; stop with a clear fix if that did not work."""
+    global _INSTALL_ATTEMPTED
+    if (genai is None or PdfReader is None or Document is None) and not _INSTALL_ATTEMPTED:
+        _INSTALL_ATTEMPTED = True
+        with st.spinner("Installing missing packages (one time, can take about a minute)..."):
+            install_missing_packages()
+
     missing = []
     if genai is None:
         missing.append("google-genai")
